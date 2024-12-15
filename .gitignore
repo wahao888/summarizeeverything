@@ -1,1 +1,3 @@
 .env
+input_media/
+processed_files.json
