@@ -17,7 +17,7 @@ client = OpenAI(api_key=api_key)
 input_dir = "input_media"        # 輸入資料夾名稱
 output_dir = "output_result"     # 輸出資料夾名稱
 processed_files_log = "processed_files.json"  # 記錄已處理檔案的日誌
-segment_length = 20 * 60         # 影片分段長度（20分鐘，單位：秒）
+segment_length = 10 * 60         # 影片分段長度（10分鐘，單位：秒）
 model_name = "gpt-4o"            # 最新模型 GPT-4o
 whisper_model = "whisper-1"      # Whisper 語音轉文字模型
 #-------------------------------------
@@ -72,6 +72,26 @@ def split_media_file(file_path, segment_length):
     return segment_paths
 
 #-------------------------------------
+# (新增) 定義函式：將 .mov 轉成音訊檔 (mp3)
+# (修改處)
+def convert_to_audio(input_file, output_audio):
+    """
+    使用 ffmpeg 將輸入的 mov 檔轉成 mp3 檔。
+    如果想進一步壓縮，可調整比特率(b:a)或取樣率(ar)等參數。
+    """
+    cmd = [
+        "ffmpeg",
+        "-i", input_file,
+        "-vn",                # 移除影像，只保留音訊
+        "-acodec", "libmp3lame",
+        "-b:a", "64k",        # 這裡設定 64k 做壓縮
+        output_audio,
+        "-y"                  # 覆蓋輸出檔案
+    ]
+    subprocess.run(cmd, capture_output=True, text=True)
+    return output_audio
+
+#-------------------------------------
 # 定義函式：呼叫 Whisper 語音轉文字
 def transcribe_audio(file_path, model="whisper-1"):
     print(f"正在轉文字：{file_path}")
@@ -114,9 +134,22 @@ for filename in os.listdir(input_dir):
             all_texts = []
             segments = split_media_file(file_path, segment_length)
             for seg_file in segments:
-                text = transcribe_audio(seg_file, model=whisper_model)
-                all_texts.append(text)
-                os.remove(seg_file)
+                # (修改處) 如果是 mov 檔，則先轉成 mp3 再進行語音轉文字
+                seg_ext = os.path.splitext(seg_file)[1].lower()
+                if seg_ext == ".mov":
+                    # 轉檔成 mp3
+                    audio_file = seg_file.replace(".mov", "_audio.mp3")
+                    convert_to_audio(seg_file, audio_file)  # 轉成音訊檔
+                    text = transcribe_audio(audio_file, model=whisper_model)
+                    all_texts.append(text)
+                    # 清理暫存檔案
+                    os.remove(seg_file)
+                    os.remove(audio_file)
+                else:
+                    # 其他格式直接做語音轉文字
+                    text = transcribe_audio(seg_file, model=whisper_model)
+                    all_texts.append(text)
+                    os.remove(seg_file)
 
             # 合併所有文字，並加入換行方便閱讀
             full_text = "\n\n".join(all_texts)
