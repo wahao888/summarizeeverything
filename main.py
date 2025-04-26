@@ -110,8 +110,8 @@ def summarize_text(content, model="gpt-4o"):
     response = client.chat.completions.create(
         model=model,
         messages=[
-            {"role": "system", "content": "你是一個專業的摘要工具，請以繁體中文輸出摘要結果。"},
-            {"role": "user", "content": f"以下是完整文本，請幫我摘要重點：\n{content}"}
+            {"role": "system", "content": "你是一個專業的摘要、評論專家，請以繁體中文輸出重點摘要結果，如果有不同人發言，請根據每個人做摘要，最後給我一段點評或心得。"},
+            {"role": "user", "content": f"以下是完整文本，請幫我摘要重點及點評或心得：\n{content}"}
         ]
     )
     print("摘要生成完成。")
