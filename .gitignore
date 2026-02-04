@@ -1,3 +1,17 @@
 .env
+
+# OS / editor
+.DS_Store
+
+# Runtime inputs/outputs (do not push)
 input_media/
+output_result/
 processed_files.json
+transcript_log.txt
+
+# Python
+__pycache__/
+*.pyc
+
+# Local venv (this repo currently has one committed; keep it local)
+summarizeeverything/
